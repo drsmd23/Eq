@@ -1,0 +1,486 @@
+---
+title: "Eq"
+author: "Scott Michael Dickson"
+date: "`r Sys.Date()`"
+output: rmarkdown::github_document
+always_allow_html: yes
+vignette: >
+  %\VignetteIndexEntry{Eq}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r intro, echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(collapse = T, comment = "#>")
+options(tibble.print_min = 4L, tibble.print_max = 4L)
+#library(readr)
+#library(magrittr)
+library(dplyr)
+#library(lubridate)
+#library(stringr)
+#library(grid)
+library(ggplot2)
+#library(leaflet)
+library(Eq)
+```
+
+# Eq package overview
+
+The Eq package contains a series of functions that enable the user to quickly load and visualise earthquake data. 
+
+The functions contained within this package are as follows:
+
+* eq_read_data
+* eq_clean_data
+* eq_location_clean
+* geom_timeline
+* geom_timeline_label
+* eq_map
+* eq_create_label
+
+The following code can be used to install the package:
+
+```{r install_ex, eval = FALSE}
+library(devtools)
+install_github("drsmd23/Eq")
+library(Eq)
+```
+
+## eq_read_data
+
+The eq_read_data function enables users to read earthquake data from the National Oceanographic and Atmospheric Administration (NOAA) text file.
+The input to the function is the path, name, and extension of the csv file containing the data. 
+Only the name and extension are required if the file is stored in the current directory.
+The output is a data frame. 
+The examples below use the data that is included with this package that can be accessed using the following code:
+
+* system.file("extdata", "signif.txt", package = "Eq").
+ 
+Examples:
+```{r read_ex}
+x <- system.file("extdata", "signif.txt", package = "Eq")
+y <- eq_read_data(x)
+y
+```
+
+## eq_clean_data
+
+The eq_clean_data function enables users to tidy and subset earthquake data.
+The columns that are kept in the data are: YEAR, MONTH, DAY, LATITUDE, LONGITUDE, LOCATION_NAME, TOTAL_DEATHS, COUNTRY, EQ_PRIMARY.
+Records with negative year values are excluded.
+A date column is created from the YEAR, MONTH, and DAY columns.
+The input to the function is the name of the input data frame on which to apply the function.
+The output is a data frame. 
+ 
+#### Examples:
+Code:
+```{r clean_ex1, eval = FALSE}
+x <- system.file("extdata", "signif.txt", package = "Eq")
+x <- eq_read_data(x)
+y <- eq_clean_data(x)
+y[,c("COUNTRY", "LATITUDE", "LONGITUDE", "DATE", "EQ_PRIMARY", "TOTAL_DEATHS", "LOCATION_NAME", "YEAR", "MONTH", "DAY")]
+```
+
+```{r clean_ex2, echo = FALSE, results = 'hide'}
+x <- system.file("extdata", "signif.txt", package = "Eq")
+x <- suppressMessages(eq_read_data(x))
+y <- eq_clean_data(x)
+y[,c("COUNTRY", "LATITUDE", "LONGITUDE", "DATE", "EQ_PRIMARY", "TOTAL_DEATHS", "LOCATION_NAME", "YEAR", "MONTH", "DAY")]
+```
+
+Result:
+```{r clean_ex3, echo = FALSE}
+y[,c("COUNTRY", "LATITUDE", "LONGITUDE", "DATE", "EQ_PRIMARY", "TOTAL_DEATHS", "LOCATION_NAME", "YEAR", "MONTH", "DAY")]
+```
+
+## eq_location_clean
+
+The eq_location_clean function enables users to tidy the LOCATION_NAME field in the earthquake data.
+It is assumed that country names are followed by a colon when a subsequent city name is provided.
+Where only the country name is given in the LOCATION_NAME field, the country name is removed since this information is in the country field.
+The LOCATION_NAME field is converted to title case
+The input to the function is the name of the input data frame on which to apply the function.
+The output is a data frame. 
+ 
+#### Examples:
+Code:
+```{r clean_loc_ex, eval = FALSE}
+# Load either magrittr or dplyr package to allow use of pipe operator %>%
+library(dplyr)
+x <- system.file("extdata", "signif.txt", package = "Eq")
+x <- x %>% 
+eq_read_data() %>%
+eq_clean_data()
+y <- eq_location_clean(x)
+y[,c("LOCATION_NAME")]
+```
+
+```{r clean_loc_ex2, echo = FALSE, results = 'hide'}
+x <- system.file("extdata", "signif.txt", package = "Eq")
+x <- suppressMessages(eq_read_data(x))
+x <- eq_clean_data(x)
+y <- eq_location_clean(x)
+y[,c("LOCATION_NAME")]
+```
+
+Result:
+```{r clean_loc_ex3, echo = FALSE}
+y[,c("LOCATION_NAME")]
+```
+
+## geom_timeline
+
+The geom_timeline function enables users to plot a timeline of the earthquake data.
+Earthquakes between dates xmin and xmax are plotted.
+Separate timelines can be shown for different groups within a single plot e.g. using the COUNTRY field.
+The size of the points on the timeline can be set to distinguish earthquakes of differing magnitude e.g using the EQ_PRIMARY field.
+The fill colour of the points on the timeline can be set to distinguish earthquakes of differing number of deaths e.g using the TOTAL_DEATHS field.  
+The output is a timeline showing eathquake sizes and intensities between specified dates. 
+ 
+#### Examples:
+Code:
+```{r timeline_ex1a, eval = FALSE}
+# Single timeline of all earthquakes in date range from all countries
+
+# Load either magrittr or dplyr package to allow use of pipe operator %>%
+# Load ggplot2 package to allow use of ggplot function
+library(dplyr)
+library(ggplot2)
+x1 <- system.file("extdata", "signif.txt", package = "Eq")
+x1 <- x1 %>%
+eq_read_data() %>%
+eq_clean_data() %>%
+eq_location_clean()
+y1 <- ggplot(data = x1) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2013-01-01"),
+					xmax = as.Date("2015-12-31"),
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="bottom")
+y1
+```
+
+```{r timeline_ex1b, echo = FALSE, results = 'hide'}
+x1 <- system.file("extdata", "signif.txt", package = "Eq")
+x1 <- suppressMessages(eq_read_data(x1))
+x1 <- eq_clean_data(x1)
+x1 <- eq_location_clean(x1)
+y1 <- ggplot(data = x1) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2013-01-01"),
+					xmax = as.Date("2015-12-31"),
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="bottom")
+```
+
+Result:
+```{r timeline_ex1c, echo = FALSE, fig.width = 7, fig.height = 3}
+y1
+```
+
+Code:
+```{r timeline_ex2a, eval = FALSE}
+# Separate timelines for earthquakes in each country
+
+# Load either magrittr or dplyr package to allow use of pipe operator %>%
+# Load ggplot2 package to allow use of ggplot function
+library(dplyr)
+library(ggplot2)
+x2 <- system.file("extdata", "signif.txt", package = "Eq")
+x2 <- x2 %>%
+eq_read_data() %>%
+eq_clean_data() %>%
+eq_location_clean()
+y2 <- ggplot(data = x2) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2000-01-01"),
+					xmax = as.Date("2015-12-31"),
+					y = COUNTRY,
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="right")
+y2
+```
+
+```{r timeline_ex2b, echo = FALSE, results = 'hide'}
+x2 <- system.file("extdata", "signif.txt", package = "Eq")
+x2 <- suppressMessages(eq_read_data(x2))
+x2 <- eq_clean_data(x2)
+x2 <- eq_location_clean(x2)
+y2 <- ggplot(data = x2) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2000-01-01"),
+					xmax = as.Date("2015-12-31"),
+					y = COUNTRY,
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="right")
+```
+
+Result:
+```{r timeline_ex2c, echo = FALSE, fig.width = 7, fig.height = 40}
+y2
+```
+
+Code:
+```{r timeline_ex3a, eval = FALSE}
+# Separate timelines for earthquakes in selected countries
+
+# Load either magrittr or dplyr package to allow use of pipe operator %>%
+# Load ggplot2 package to allow use of ggplot function
+library(dplyr)
+library(ggplot2)
+x3 <- system.file("extdata", "signif.txt", package = "Eq")
+x3 <- x3 %>%
+eq_read_data() %>%
+eq_clean_data() %>%
+eq_location_clean()
+y3 <- ggplot(data = subset(x3, COUNTRY %in% c("USA" , "CHINA"))) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2000-01-01"),
+					xmax = as.Date("2015-12-31"),
+					y = COUNTRY,
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="right")
+y3
+```
+
+```{r timeline_ex3b, echo = FALSE, results = 'hide'}
+x3 <- system.file("extdata", "signif.txt", package = "Eq")
+x3 <- suppressMessages(eq_read_data(x3))
+x3 <- eq_clean_data(x3)
+x3 <- eq_location_clean(x3)
+y3 <- ggplot(data = subset(x3, COUNTRY %in% c("USA" , "CHINA"))) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2000-01-01"),
+					xmax = as.Date("2015-12-31"),
+					y = COUNTRY,
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="right")
+```
+
+Result:
+```{r timeline_ex3c, echo = FALSE, fig.width = 7, fig.height = 4}
+y3
+```
+
+## geom_timeline_label
+
+The geom_timeline_label function enables users to add location labels to timeline plots of the earthquake data.
+Labels can be added to a subset of the plotted earthquakes using the n_max parameter to show labels of the highest magnitude earthquakes.
+Parameters other than n_max should be the same values as used in the geom_timeline function.  
+The output is a timeline showing eathquake sizes and intensities between specified dates with location name labels. 
+ 
+#### Examples:
+Code:
+```{r timeline_lbl_ex1a, eval = FALSE}
+# Separate timelines for earthquakes in selected countries with labels for highest magnitude earthquakes only
+
+# Load either magrittr or dplyr package to allow use of pipe operator %>%
+# Load ggplot2 package to allow use of ggplot function
+library(dplyr)
+library(ggplot2)
+x1 <- system.file("extdata", "signif.txt", package = "Eq")
+x1 <- x1 %>%
+eq_read_data() %>%
+eq_clean_data() %>%
+eq_location_clean()
+y1 <- ggplot(data = x1) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2013-01-01"),
+					xmax = as.Date("2015-12-31"),
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) + 
+geom_timeline_label(aes(x = DATE,
+						xmin = as.Date("2013-01-01"),
+						xmax = as.Date("2015-12-31"), 
+						label = LOCATION_NAME, 
+						size = EQ_PRIMARY), 
+					n_max = 5) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="bottom")
+y1
+```
+
+```{r timeline_lbl_ex1b, echo = FALSE, results = 'hide'}
+x1 <- system.file("extdata", "signif.txt", package = "Eq")
+x1 <- suppressMessages(eq_read_data(x1))
+x1 <- eq_clean_data(x1)
+x1 <- eq_location_clean(x1)
+y1 <- ggplot(data = x1) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2013-01-01"),
+					xmax = as.Date("2015-12-31"),
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) + 
+geom_timeline_label(aes(x = DATE,
+						xmin = as.Date("2013-01-01"),
+						xmax = as.Date("2015-12-31"), 
+						label = LOCATION_NAME, 
+						size = EQ_PRIMARY), 
+					n_max = 5) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="bottom")
+```
+
+Result:
+```{r timeline_lbl_ex1c, echo = FALSE, fig.width = 7, fig.height = 4}
+y1
+```
+
+Code:
+```{r timeline_lbl_ex3a, eval = FALSE}
+# Separate timelines for earthquakes in selected countries with labels for highest magnitude earthquakes only
+
+# Load either magrittr or dplyr package to allow use of pipe operator %>%
+# Load ggplot2 package to allow use of ggplot function
+library(dplyr)
+library(ggplot2)
+x3 <- system.file("extdata", "signif.txt", package = "Eq")
+x3 <- x3 %>%
+eq_read_data() %>%
+eq_clean_data() %>%
+eq_location_clean()
+y3 <- ggplot(data = subset(x3, COUNTRY %in% c("USA" , "CHINA"))) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2011-01-01"),
+					xmax = as.Date("2016-12-31"),
+					y = COUNTRY,
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) + 
+geom_timeline_label(aes(x = DATE,
+						xmin = as.Date("2011-01-01"),
+						xmax = as.Date("2016-12-31"),
+						y = COUNTRY, 
+						label = LOCATION_NAME, 
+						size = EQ_PRIMARY), 
+					n_max = 4) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="bottom")
+y3
+```
+
+```{r timeline_lbl_ex3b, echo = FALSE, results = 'hide'}
+x3 <- system.file("extdata", "signif.txt", package = "Eq")
+x3 <- suppressMessages(eq_read_data(x3))
+x3 <- eq_clean_data(x3)
+x3 <- eq_location_clean(x3)
+y3 <- ggplot(data = subset(x3, COUNTRY %in% c("USA" , "CHINA"))) +
+geom_timeline(aes(	x = DATE,
+					xmin = as.Date("2011-01-01"),
+					xmax = as.Date("2016-12-31"),
+					y = COUNTRY,
+					size = EQ_PRIMARY,
+					fill = TOTAL_DEATHS          		
+)) + 
+geom_timeline_label(aes(x = DATE,
+						xmin = as.Date("2011-01-01"),
+						xmax = as.Date("2016-12-31"),
+						y = COUNTRY, 
+						label = LOCATION_NAME, 
+						size = EQ_PRIMARY), 
+					n_max = 4) +
+labs(size = "Richter scale value", fill = "# deaths") +
+theme(legend.position="bottom")
+```
+
+Result:
+```{r timeline_lbl_ex3c, echo = FALSE, fig.width = 7, fig.height = 9}
+y3
+```
+
+## eq_map
+
+The eq_map function creates an interactive map of earthquake data.
+An input to the function is the name of the input data frame on which to apply the function.
+The annot_col parameter can be used to specify the field to use as a label for points on the map e.g. DATE.
+The output is an interactive map.
+ 
+#### Examples:
+Code:
+```{r map_ex1, eval = FALSE}
+# Load either magrittr or dplyr package to allow use of pipe operator %>%
+library(dplyr)
+x <- system.file("extdata", "signif.txt", package = "Eq")
+x <- x %>%
+eq_read_data()
+eq_clean_data()
+eq_location_clean()
+y <- x %>% 
+dplyr::filter(COUNTRY == "MEXICO" & lubridate::year(DATE) >= 2000) %>% 
+eq_map(annot_col = "DATE")
+y
+```
+
+```{r map_ex2, echo = FALSE, results = 'hide'}
+x <- system.file("extdata", "signif.txt", package = "Eq")
+x <- suppressMessages(eq_read_data(x))
+x <- eq_clean_data(x)
+x <- eq_location_clean(x)
+y <- x %>% 
+dplyr::filter(COUNTRY == "MEXICO" & lubridate::year(DATE) >= 2000) %>% 
+eq_map(annot_col = "DATE")
+y
+```
+
+Result:
+```{r map_ex3, echo = FALSE, fig.width = 7, fig.height = 4}
+y
+```
+
+## eq_create_label
+
+The eq_create_label function creates creates and applies formatting to the labels for the points on the interactive map of earthquake data.
+The input to the function is the name of the input data frame on which to apply the function.
+ 
+#### Examples:
+Code:
+```{r map_lbl_ex1, eval = FALSE}
+x <- system.file("extdata", "signif.txt", package = "Eq")
+x <- x %>% 
+eq_read_data()
+eq_clean_data()
+eq_location_clean()
+y <- x %>% 
+dplyr::filter(COUNTRY == "MEXICO" & lubridate::year(DATE) >= 2000) %>%
+dplyr::mutate(popup_text = eq_create_label(.)) %>% 
+eq_map(annot_col = "popup_text")
+y
+```
+
+```{r map_lbl_ex2, echo = FALSE, results = 'hide'}
+x <- system.file("extdata", "signif.txt", package = "Eq")
+x <- suppressMessages(eq_read_data(x))
+x <- eq_clean_data(x)
+x <- eq_location_clean(x)
+y <- x %>% 
+dplyr::filter(COUNTRY == "MEXICO" & lubridate::year(DATE) >= 2000) %>%
+dplyr::mutate(popup_text = eq_create_label(.)) %>% 
+eq_map(annot_col = "popup_text")
+y
+```
+
+Result:
+```{r map_lbl_ex3, echo = FALSE, fig.width = 7, fig.height = 4}
+y
+```
+
