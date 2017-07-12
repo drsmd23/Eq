@@ -1,0 +1,14 @@
+Package: Eq
+Title: Visualise earthquake data
+Version: 1.0
+Authors@R: person("Scott", "Dickson", email = "scott.dickson@gad.gov.uk", role = c("aut", "cre"))
+Description: Contains functions to visualise earthquake data.
+Depends: R (>= 3.3.3)
+License: CC0
+Encoding: UTF-8
+LazyData: true
+Imports: dplyr, readr, magrittr, lubridate, stringr, grid, ggplot2, leaflet
+Suggests: knitr, devtools, roxygen2, testthat,
+    rmarkdown
+RoxygenNote: 6.0.1
+VignetteBuilder: knitr

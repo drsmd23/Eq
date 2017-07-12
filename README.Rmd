@@ -1,0 +1,29 @@
+---
+output: github_document
+---
+
+[![Build Status](https://travis-ci.org/drsmd23/Eq.svg?branch=master)](https://travis-ci.org/drsmd23/Eq)
+
+# Eq package overview
+
+The Eq package contains a series of functions that enable the user to quickly load and visualise earthquake data. 
+
+The functions contained within this package are as follows:
+
+* eq_read_data
+* eq_clean_data
+* eq_location_clean
+* geom_timeline
+* geom_timeline_label
+* eq_map
+* eq_create_label
+
+The following code can be used to install the package:
+
+```{r install_ex, eval = FALSE}
+library(devtools)
+install_github("Eq")
+library(Eq)
+```
+
+See vignettes for further details and examples of each function.
