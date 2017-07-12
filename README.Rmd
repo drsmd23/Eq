@@ -22,7 +22,7 @@ The following code can be used to install the package:
 
 ```{r install_ex, eval = FALSE}
 library(devtools)
-install_github("Eq")
+install_github("drsmd23/Eq")
 library(Eq)
 ```
 
